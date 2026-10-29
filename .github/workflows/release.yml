@@ -1,4 +1,4 @@
-name: Linux release builds
+name: Release builds
 
 on:
   push:
@@ -98,53 +98,146 @@ jobs:
             exit 1
           fi
 
-      - name: Package release archive
+      - name: Prepare standalone executable
         env:
           TARGET_NAME: ${{ matrix.name }}
         run: |
-          mkdir --parents "dist/${TARGET_NAME}/licenses"
-          cp "build/${TARGET_NAME}/AutoAuth" "dist/${TARGET_NAME}/AutoAuth"
-          cp LICENSE README.md "dist/${TARGET_NAME}/"
-          cp third_party/curl/COPYING "dist/${TARGET_NAME}/licenses/curl-COPYING"
-          cp third_party/cJSON/LICENSE "dist/${TARGET_NAME}/licenses/cJSON-LICENSE"
-          tar --create --gzip \
-            --file "dist/AutoAuth-linux-${TARGET_NAME}.tar.gz" \
-            --directory "dist/${TARGET_NAME}" .
-          sha256sum "dist/AutoAuth-linux-${TARGET_NAME}.tar.gz" \
-            > "dist/AutoAuth-linux-${TARGET_NAME}.tar.gz.sha256"
+          mkdir --parents dist
+          cp "build/${TARGET_NAME}/AutoAuth" "dist/AutoAuth-linux-${TARGET_NAME}"
+          (cd dist && sha256sum "AutoAuth-linux-${TARGET_NAME}") \
+            > "dist/AutoAuth-linux-${TARGET_NAME}.sha256"
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: AutoAuth-linux-${{ matrix.name }}
           path: |
-            dist/AutoAuth-linux-${{ matrix.name }}.tar.gz
-            dist/AutoAuth-linux-${{ matrix.name }}.tar.gz.sha256
+            dist/AutoAuth-linux-${{ matrix.name }}
+            dist/AutoAuth-linux-${{ matrix.name }}.sha256
+          if-no-files-found: error
+          retention-days: 14
+
+  build-windows:
+    name: Build Windows ${{ matrix.name }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: amd64
+            zig_target: x86_64-windows-gnu
+            processor: x86_64
+            expected_arch: x86_64
+          - name: i386
+            zig_target: x86-windows-gnu
+            processor: i386
+            expected_arch: i386
+
+    steps:
+      - name: Check out source and pinned dependencies
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes ninja-build llvm
+
+      - name: Install Zig
+        shell: bash
+        run: |
+          set -euo pipefail
+          zig_version=0.14.1
+          archive="zig-x86_64-linux-${zig_version}.tar.xz"
+          archive_url="https://ziglang.org/download/${zig_version}/${archive}"
+          expected_sha256=24aeeec8af16c381934a6cd7d95c807a8cb2cf7df9fa40d359aa884195c4716c
+          curl --fail --location --retry 3 "$archive_url" --output "$RUNNER_TEMP/$archive"
+          echo "$expected_sha256  $RUNNER_TEMP/$archive" | sha256sum --check
+          mkdir --parents "$RUNNER_TEMP/zig"
+          tar --extract --file "$RUNNER_TEMP/$archive" \
+            --directory "$RUNNER_TEMP/zig" --strip-components=1
+          echo "$RUNNER_TEMP/zig" >> "$GITHUB_PATH"
+          echo "ZIG_EXECUTABLE=$RUNNER_TEMP/zig/zig" >> "$GITHUB_ENV"
+
+      - name: Configure cross-compilation
+        run: >
+          cmake -S . -B "build/windows-${{ matrix.name }}" -G Ninja
+          -DCMAKE_TOOLCHAIN_FILE=cmake/zig-windows-gnu.cmake
+          -DCMAKE_C_COMPILER_TARGET=${{ matrix.zig_target }}
+          -DAUTOAUTH_TARGET_PROCESSOR=${{ matrix.processor }}
+          -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build "build/windows-${{ matrix.name }}" --parallel 2 --target AutoAuth
+
+      - name: Verify executable architecture
+        env:
+          EXPECTED_ARCH: ${{ matrix.expected_arch }}
+          TARGET_NAME: ${{ matrix.name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          binary="build/windows-${TARGET_NAME}/AutoAuth.exe"
+          file "$binary"
+          llvm-readobj --file-headers "$binary" > "$RUNNER_TEMP/pe-header.txt"
+          grep -F "Arch: ${EXPECTED_ARCH}" "$RUNNER_TEMP/pe-header.txt"
+          grep -F "ImageFileHeader" "$RUNNER_TEMP/pe-header.txt"
+
+      - name: Prepare standalone executable
+        env:
+          TARGET_NAME: ${{ matrix.name }}
+        run: |
+          mkdir --parents dist
+          cp "build/windows-${TARGET_NAME}/AutoAuth.exe" \
+            "dist/AutoAuth-windows-${TARGET_NAME}.exe"
+          (cd dist && sha256sum "AutoAuth-windows-${TARGET_NAME}.exe") \
+            > "dist/AutoAuth-windows-${TARGET_NAME}.exe.sha256"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AutoAuth-windows-${{ matrix.name }}
+          path: |
+            dist/AutoAuth-windows-${{ matrix.name }}.exe
+            dist/AutoAuth-windows-${{ matrix.name }}.exe.sha256
           if-no-files-found: error
           retention-days: 14
 
   release:
     name: Publish GitHub Release
     if: startsWith(github.ref, 'refs/tags/')
-    needs: build
+    needs:
+      - build
+      - build-windows
     runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
+      - name: Check out source and pinned dependencies
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
       - name: Download architecture artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: AutoAuth-linux-*
+          pattern: AutoAuth-*
           path: release-assets
           merge-multiple: true
+
+      - name: Add license notices
+        run: |
+          cp LICENSE release-assets/LICENSE
+          cp third_party/curl/COPYING release-assets/curl-COPYING
+          cp third_party/cJSON/LICENSE release-assets/cJSON-LICENSE
 
       - name: Publish release assets
         uses: softprops/action-gh-release@v2
         with:
           body: |
-            This release adds automated GitHub Actions builds for four static Linux architectures: amd64, i386, AArch64, and ARM hard-float (armhf).
+            本版本新增 Windows amd64 和 i386 架构构建，并提供 Linux amd64、i386、AArch64 和 ARM hard-float（armhf）版本。
 
-            Each archive contains the AutoAuth executable and the project, curl, and cJSON license notices. SHA-256 checksums are provided alongside the archives.
+            各平台可执行文件均作为独立附件直接下载，不再打包为压缩包。每个程序都附有 SHA-256 校验文件；项目、curl 和 cJSON 许可证也作为独立附件提供。
           files: |
-            release-assets/*.tar.gz
-            release-assets/*.sha256
+            release-assets/*

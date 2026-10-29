@@ -1,61 +1,63 @@
-# AutoAuth C environment
+# AutoAuth C 语言校园网认证客户端
 
-AutoAuth is licensed under the GNU General Public License, version 3 only
-(GPL-3.0-only). See [LICENSE](./LICENSE) for the full license text.
-Copyright (C) 2026 mai302mai.
+AutoAuth 使用 GNU 通用公共许可证第 3 版（GPL-3.0-only）授权，详见
+[LICENSE](./LICENSE)。版权所有 (C) 2026 mai302mai。
 
-The project uses the following upstream dependencies as Git submodules:
+项目通过 Git 子模块使用以下第三方依赖：
 
-- [curl](https://github.com/curl/curl), pinned to 8.23.0; see
-  [its COPYING file](./third_party/curl/COPYING).
-- [cJSON](https://github.com/DaveGamble/cJSON), pinned to 1.7.18; see
-  [its MIT license](./third_party/cJSON/LICENSE).
+- [curl](https://github.com/curl/curl)，固定版本为 8.23.0，许可证见
+  [third_party/curl/COPYING](./third_party/curl/COPYING)。
+- [cJSON](https://github.com/DaveGamble/cJSON)，固定版本为 1.7.18，MIT
+  许可证见 [third_party/cJSON/LICENSE](./third_party/cJSON/LICENSE)。
 
-The dependency submodules retain their upstream licenses; the project's
-GPLv3 license does not replace those notices.
+第三方依赖保留各自的上游许可证；项目的 GPLv3 许可证不会替代这些许可声明。
 
-Clone this project and its dependencies with:
+## 获取源码
+
+递归克隆仓库以同时获取依赖：
 
 ```sh
 git clone --recurse-submodules https://github.com/mai302mai/ZHKUAutoAuth.git
 ```
 
-If you already cloned the project without submodules, initialize them with
-`git submodule update --init --recursive`.
+如果已经克隆仓库但尚未获取子模块，请运行：
 
-The project is configured for C17 with MinGW-w64, CMake, and libcurl. Windows
-builds use Schannel for HTTPS and the Windows certificate store without
-requiring a separate OpenSSL installation.
+```sh
+git submodule update --init --recursive
+```
 
-## Requirements
+## 构建要求
 
-- CMake 3.21 or later
-- MinGW-w64 GCC and `mingw32-make` on `PATH` for the Windows build
-- VS Code C/C++ extension for debugging
+- CMake 3.21 或更高版本
+- Windows 构建需要 MinGW-w64 GCC 和 `mingw32-make`
+- VS Code C/C++ 扩展（可选，用于调试）
 
-The Windows CMake preset finds MinGW-w64 through `PATH`. Add the MinGW `bin`
-directory to `PATH` if the compiler or `mingw32-make` cannot be found.
+项目使用 C17、CMake 和 libcurl。Windows 版本通过 Schannel 支持 HTTPS，
+并使用 Windows 证书存储，无需单独安装 OpenSSL。
 
-## Build and run
+Windows CMake preset 会从 `PATH` 查找 MinGW-w64。如果找不到编译器或
+`mingw32-make`，请将 MinGW 的 `bin` 目录加入 `PATH`。
 
-Press `Ctrl+Shift+B` in VS Code to configure and build, or run:
+## 构建和运行
+
+在 VS Code 中按 `Ctrl+Shift+B`，或者在 PowerShell 中执行：
 
 ```powershell
 cmake --preset mingw-debug
 cmake --build --preset mingw-debug
 ```
 
-Run the online authentication workflow (Windows):
+在 Windows 上运行认证程序：
 
 ```powershell
 .\build\mingw-debug\AutoAuth.exe your-account your-password
 ```
 
-The program queries the configured portal's online list first. If the account
-is already online, it prints the first record's `online_time`, `online_ip`,
-`uplink_bytes`, and `downlink_bytes`; otherwise, it submits the login request.
+程序会先查询在线列表。若账户已经在线，会输出第一条记录的
+`online_time`、`online_ip`、`uplink_bytes` 和 `downlink_bytes`；否则提交
+登录请求。
 
-On Linux, build and run with a network interface name:
+在 Linux 上构建并运行时，还需要传入网络接口名称：
 
 ```sh
 cmake -S . -B build/linux
@@ -63,82 +65,84 @@ cmake --build build/linux
 ./build/linux/AutoAuth your-account your-password eth0
 ```
 
-Linux interface binding for the general `http_get()` API is enabled by
-default on Linux and remains an optional CMake feature. The authentication
-module always binds portal requests to the required interface name.
+Linux 下通用 `http_get()` API 的网络接口绑定默认启用，也可以通过 CMake
+选项关闭。认证模块会始终绑定到指定的网络接口。
 
-## Windows host: cross-compile a static Linux AArch64 executable
+## 在 Windows 主机上交叉编译 Linux AArch64 程序
 
-The `linux-aarch64` CMake preset uses Zig's `aarch64-linux-musl` target and
-links a static executable, so the target device does not need a separate libc
-or libcurl shared library. TLS is disabled for this preset because the
-configured portal uses HTTP. Install Zig 0.14.1 and LLVM-MinGW, and add both
-toolchains' `bin` directories to `PATH`. The toolchain file also checks
-`D:\Software\zig-0.14.1` and `D:\Software\LLVM-MinGW64` as default locations.
+`linux-aarch64` CMake preset 使用 Zig 的 `aarch64-linux-musl` 目标并静态
+链接，因此目标设备不需要另行安装 libc 或 libcurl 共享库。由于门户使用
+HTTP，此 preset 会关闭 TLS。
+
+请安装 Zig 0.14.1 和 LLVM-MinGW，并将两者的 `bin` 目录加入 `PATH`。工具链
+配置也会检查以下默认安装目录：
+`D:\Software\zig-0.14.1` 和 `D:\Software\LLVM-MinGW64`。
 
 ```powershell
 cmake --preset linux-aarch64
 cmake --build --preset linux-aarch64
 ```
 
-The output is `build/linux-aarch64/AutoAuth`, a Linux AArch64 ELF executable.
-Run it on an AArch64 Linux device:
+生成的文件为 `build/linux-aarch64/AutoAuth`，这是 Linux AArch64 ELF 可执行
+文件。可在 AArch64 Linux 设备上运行：
 
 ```sh
 ./AutoAuth your-account your-password eth0
 ```
 
-If Zig is not on `PATH`, set `ZIG_EXECUTABLE` when configuring. If LLVM-MinGW
-is not on `PATH`, set `AUTOAUTH_LLVM_MINGW_ROOT` to its installation directory.
+如果 Zig 不在 `PATH` 中，请在配置时设置 `ZIG_EXECUTABLE`。如果 LLVM-MinGW
+不在 `PATH` 中，请设置 `AUTOAUTH_LLVM_MINGW_ROOT` 为其安装目录。
 
-`network_auth.c` contains the portal workflow. It gets the selected Linux
-interface's IPv4 address, or determines the Windows route-selected IPv4
-address, and places it in the `wlan_ac_ip` parameter. Portal requests bypass
-proxy environment variables so local authentication traffic is sent directly
-to the portal.
+## 功能说明
 
-The portal login endpoint uses plain HTTP and sends the password in the URL
-query as required by its protocol. Use this only on a trusted network; command
-line arguments may also be visible to other local processes.
+`network_auth.c` 实现认证流程：在 Linux 上获取指定接口的 IPv4 地址；在
+Windows 上确定到门户的路由所选 IPv4 地址，并将该地址填入 `wlan_ac_ip`
+参数。门户请求会绕过代理环境变量，直接发送至门户。
 
-On Windows, the program sets the console output code page to UTF-8 when stdout
-is attached to a console, and compiles its Chinese messages as UTF-8. If output
-is redirected, configure the receiving terminal or file viewer to read UTF-8.
+门户登录接口使用明文 HTTP，并按其协议要求在 URL 查询参数中发送密码。
+请仅在可信网络中使用；命令行参数也可能被本机其他进程查看。
 
-The GET client is in `http_client.c` / `http_client.h`; it returns a
-heap-allocated response body which the authentication module releases with
-`free()`.
+Windows 程序在标准输出连接到控制台时会将控制台代码页设为 UTF-8，并以
+UTF-8 编码编译中文消息。如果输出被重定向，请确保接收终端或文件查看器
+使用 UTF-8 编码。
 
-`online_info_parse(json, json_size)` parses the response and returns an
-`online_info` structure containing the four fields as owned strings. Release
-the structure and its fields with `online_info_destroy()`. The HTTP response
-buffer returned by `http_get` remains heap-allocated and must be released with
-`free()`.
+GET 客户端实现位于 `http_client.c` 和 `http_client.h`。函数返回堆分配的
+响应内容，认证模块使用 `free()` 释放。
 
-cJSON 1.7.18 is checked out as a submodule under `third_party/cJSON` and is
-distributed under the MIT license; see `third_party/cJSON/LICENSE`.
+`online_info_parse(json, json_size)` 用于解析响应并返回 `online_info`
+结构体，其中的四个字段均为该结构体拥有的字符串。使用
+`online_info_destroy()` 释放结构体及其字段。`http_get` 返回的响应缓冲区
+仍需由调用方使用 `free()` 释放。
 
-Run the parser tests with:
+cJSON 1.7.18 位于 `third_party/cJSON` 子模块中，按 MIT 许可证发布，详见
+`third_party/cJSON/LICENSE`。curl 8.23.0 源码及其许可证位于
+`third_party/curl` 子模块中。
+
+运行在线信息解析测试：
 
 ```powershell
 ctest --test-dir build/mingw-debug --output-on-failure
 ```
 
-The curl 8.23.0 source and its license are in the `third_party/curl`
-submodule.
+## GitHub Actions 自动构建与发行
 
-## GitHub Actions release builds
+GitHub Actions 会构建以下平台的可执行文件：
 
-GitHub Actions builds static Linux musl executables for amd64, i386, AArch64,
-and ARM hard-float (armhf). The i386 target is 32-bit x86. Push a version tag
-such as `v1.0.0` to build all four archives and publish them as GitHub Release
-assets:
+- Linux amd64、i386、AArch64 和 ARM hard-float（armhf）；其中 i386 为 32 位
+  x86，Linux 发行版使用 musl 静态链接。
+- Windows amd64 和 i386；其中 i386 为 32 位 x86。
+
+推送版本标签（例如 `v1.0.1`）后，工作流会创建 GitHub Release，并将各平台
+的可执行文件作为**独立附件**发布，而不是放入压缩包：
 
 ```sh
-git tag v1.0.0
-git push origin v1.0.0
+git tag v1.0.1
+git push origin v1.0.1
 ```
 
-Each release archive contains the executable and the project, curl, and cJSON
-license notices. The workflow can also be run manually from the GitHub Actions
-tab to build downloadable artifacts without publishing a release.
+附件名称为 `AutoAuth-linux-<架构>` 和
+`AutoAuth-windows-<架构>.exe`。每个可执行文件旁都提供对应的 `.sha256`
+校验文件；项目、curl 和 cJSON 的许可证也会作为独立附件发布。
+
+也可以在 GitHub Actions 页面手动运行工作流，下载构建产物；手动运行不会
+创建 GitHub Release。
