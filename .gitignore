@@ -1,0 +1,27 @@
+# CMake build output
+/build/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+compile_commands.json
+
+# Compiled artifacts
+*.o
+*.obj
+*.a
+*.lib
+*.dll
+*.exe
+
+# Local VS Code settings
+/.vscode/launch.json
+/.vscode/c_cpp_properties.json
+/.vscode/settings.json
+/.vscode/.browse.VC.db
+/.vscode/ipch/
+
+# Local operating-system/editor files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo

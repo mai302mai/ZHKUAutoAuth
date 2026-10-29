@@ -1,0 +1,46 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 21,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "mingw-debug",
+      "displayName": "MinGW-w64 Debug",
+      "generator": "MinGW Makefiles",
+      "binaryDir": "${sourceDir}/build/mingw-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "linux-aarch64",
+      "displayName": "Linux AArch64 (musl, static)",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/linux-aarch64",
+      "toolchainFile": "${sourceDir}/cmake/aarch64-linux-musl.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "AUTOAUTH_ENABLE_TLS": "OFF",
+        "AUTOAUTH_ENABLE_LINUX_INTERFACE_BINDING": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "mingw-debug",
+      "configurePreset": "mingw-debug"
+    },
+    {
+      "name": "linux-aarch64",
+      "configurePreset": "linux-aarch64",
+      "targets": [
+        "AutoAuth"
+      ]
+    }
+  ]
+}

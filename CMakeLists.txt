@@ -1,0 +1,78 @@
+cmake_minimum_required(VERSION 3.21)
+project(AutoAuth LANGUAGES C)
+
+set(CMAKE_C_STANDARD 17)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_C_EXTENSIONS OFF)
+
+set(BUILD_CURL_EXE OFF CACHE BOOL "" FORCE)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+set(BUILD_STATIC_LIBS ON CACHE BOOL "" FORCE)
+set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+set(BUILD_LIBCURL_DOCS OFF CACHE BOOL "" FORCE)
+set(BUILD_MISC_DOCS OFF CACHE BOOL "" FORCE)
+set(ENABLE_CURL_MANUAL OFF CACHE BOOL "" FORCE)
+option(AUTOAUTH_ENABLE_TLS "Enable HTTPS support in the bundled libcurl" ON)
+set(CURL_ENABLE_SSL "${AUTOAUTH_ENABLE_TLS}" CACHE BOOL "" FORCE)
+set(CURL_USE_LIBPSL OFF CACHE BOOL "" FORCE)
+
+if(WIN32)
+  set(CURL_USE_SCHANNEL ON CACHE BOOL "" FORCE)
+  set(CURL_USE_OPENSSL OFF CACHE BOOL "" FORCE)
+else()
+  set(CURL_USE_SCHANNEL OFF CACHE BOOL "" FORCE)
+  if(NOT AUTOAUTH_ENABLE_TLS)
+    set(CURL_USE_OPENSSL OFF CACHE BOOL "" FORCE)
+  endif()
+endif()
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  set(_autoauth_linux_interface_binding_default ON)
+else()
+  set(_autoauth_linux_interface_binding_default OFF)
+endif()
+option(AUTOAUTH_ENABLE_LINUX_INTERFACE_BINDING
+  "Enable CURLOPT_INTERFACE for Linux GET requests"
+  ${_autoauth_linux_interface_binding_default})
+if(AUTOAUTH_ENABLE_LINUX_INTERFACE_BINDING AND NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  message(FATAL_ERROR "AUTOAUTH_ENABLE_LINUX_INTERFACE_BINDING is supported only on Linux.")
+endif()
+
+add_subdirectory(third_party/curl EXCLUDE_FROM_ALL)
+
+add_library(cjson STATIC third_party/cJSON/cJSON.c)
+target_include_directories(cjson PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/third_party/cJSON")
+
+add_library(online_info STATIC online_info.c)
+target_include_directories(online_info PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(online_info PRIVATE cjson)
+
+add_library(http_client STATIC http_client.c)
+target_include_directories(http_client PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(http_client PUBLIC CURL::libcurl)
+if(AUTOAUTH_ENABLE_LINUX_INTERFACE_BINDING)
+  target_compile_definitions(http_client PUBLIC AUTOAUTH_ENABLE_LINUX_INTERFACE_BINDING)
+endif()
+
+add_library(network_auth STATIC network_auth.c)
+target_include_directories(network_auth PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(network_auth PUBLIC http_client online_info PRIVATE cjson)
+if(WIN32 AND CMAKE_C_COMPILER_ID STREQUAL "GNU")
+  target_compile_options(network_auth PRIVATE
+    -finput-charset=UTF-8
+    -fexec-charset=UTF-8)
+endif()
+if(AUTOAUTH_ENABLE_LINUX_INTERFACE_BINDING)
+  target_compile_definitions(network_auth PUBLIC AUTOAUTH_ENABLE_LINUX_INTERFACE_BINDING)
+endif()
+if(WIN32)
+  target_link_libraries(network_auth PRIVATE ws2_32)
+endif()
+
+add_executable(AutoAuth main.c)
+target_link_libraries(AutoAuth PRIVATE network_auth)
+
+enable_testing()
+add_executable(test_online_info tests/test_online_info.c)
+target_link_libraries(test_online_info PRIVATE online_info)
+add_test(NAME online_info_parser COMMAND test_online_info)
