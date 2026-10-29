@@ -1,16 +1,10 @@
-# AutoAuth C 语言校园网认证客户端
-
-AutoAuth 使用 GNU 通用公共许可证第 3 版（GPL-3.0-only）授权，详见
-[LICENSE](./LICENSE)。版权所有 (C) 2026 mai302mai。
+# AutoAuth 仲恺农业工程学院校园网认证客户端
 
 项目通过 Git 子模块使用以下第三方依赖：
 
-- [curl](https://github.com/curl/curl)，固定版本为 8.23.0，许可证见
-  [third_party/curl/COPYING](./third_party/curl/COPYING)。
-- [cJSON](https://github.com/DaveGamble/cJSON)，固定版本为 1.7.18，MIT
-  许可证见 [third_party/cJSON/LICENSE](./third_party/cJSON/LICENSE)。
+- [curl](https://github.com/curl/curl)，固定版本为 8.23.0
+- [cJSON](https://github.com/DaveGamble/cJSON)，固定版本为 1.7.18
 
-第三方依赖保留各自的上游许可证；项目的 GPLv3 许可证不会替代这些许可声明。
 
 ## 获取源码
 
@@ -128,21 +122,10 @@ ctest --test-dir build/mingw-debug --output-on-failure
 
 GitHub Actions 会构建以下平台的可执行文件：
 
-- Linux amd64、i386、AArch64 和 ARM hard-float（armhf）；其中 i386 为 32 位
-  x86，Linux 发行版使用 musl 静态链接。
-- Windows amd64 和 i386；其中 i386 为 32 位 x86。
+- Linux amd64、i386、AArch64 和 ARM hard-float（armhf）
+- Windows amd64 和 i386
 
-推送版本标签（例如 `v1.0.1`）后，工作流会创建 GitHub Release，并将各平台
-的可执行文件作为**独立附件**发布，而不是放入压缩包：
+##许可证
+AutoAuth 使用 GNU 通用公共许可证第 3 版（GPL-3.0-only）授权，详见
+[LICENSE](./LICENSE)。版权所有 (C) 2026 mai302mai。
 
-```sh
-git tag v1.0.1
-git push origin v1.0.1
-```
-
-附件名称为 `AutoAuth-linux-<架构>` 和
-`AutoAuth-windows-<架构>.exe`。每个可执行文件旁都提供对应的 `.sha256`
-校验文件；项目、curl 和 cJSON 的许可证也会作为独立附件发布。
-
-也可以在 GitHub Actions 页面手动运行工作流，下载构建产物；手动运行不会
-创建 GitHub Release。
