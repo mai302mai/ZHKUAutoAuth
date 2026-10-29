@@ -24,6 +24,7 @@ git submodule update --init --recursive
 
 - CMake 3.21 或更高版本
 - Windows 构建需要 MinGW-w64 GCC 和 `mingw32-make`
+- Linux 构建需要 GCC 等编译环境
 - VS Code C/C++ 扩展（可选，用于调试）
 
 项目使用 C17、CMake 和 libcurl。Windows 版本通过 Schannel 支持 HTTPS，
@@ -34,7 +35,7 @@ Windows CMake preset 会从 `PATH` 查找 MinGW-w64。如果找不到编译器�
 
 ## 构建和运行
 
-在 VS Code 中按 `Ctrl+Shift+B`，或者在 PowerShell 中执行：
+### 在 Windows 平台构建和运行程序：
 
 ```powershell
 cmake --preset mingw-debug
@@ -44,23 +45,28 @@ cmake --build --preset mingw-debug
 在 Windows 上运行认证程序：
 
 ```powershell
-.\build\mingw-debug\AutoAuth.exe your-account your-password
+.\build\mingw-debug\AutoAuth.exe 账户名称(学号) 账户密码
 ```
 
 程序会先查询在线列表。若账户已经在线，会输出第一条记录的
-`online_time`、`online_ip`、`uplink_bytes` 和 `downlink_bytes`；否则提交
-登录请求。
+在线时间、客户端IP、上传大小(Byte) 和 下载大小(Byte)；否则提交登录请求。
 
-在 Linux 上构建并运行时，还需要传入网络接口名称：
+### 在 Linux 平台上构建和运行程序：
+
+构建程序
 
 ```sh
 cmake -S . -B build/linux
 cmake --build build/linux
-./build/linux/AutoAuth your-account your-password eth0
 ```
 
-Linux 下通用 `http_get()` API 的网络接口绑定默认启用，也可以通过 CMake
-选项关闭。认证模块会始终绑定到指定的网络接口。
+运行程序 
+在 Linux 上构建并运行时，还需要传入网络接口名称 (eg. eth0)
+指定接口功能用于OpenWRT等路由设备上多接口认证
+
+```
+./build/linux/AutoAuth 账户名称(学号) 账户密码 eth0
+```
 
 ## 在 Windows 主机上交叉编译 Linux AArch64 程序
 
