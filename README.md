@@ -126,3 +126,19 @@ ctest --test-dir build/mingw-debug --output-on-failure
 
 The curl 8.23.0 source and its license are in the `third_party/curl`
 submodule.
+
+## GitHub Actions release builds
+
+GitHub Actions builds static Linux musl executables for amd64, i386, AArch64,
+and ARM hard-float (armhf). The i386 target is 32-bit x86. Push a version tag
+such as `v1.0.0` to build all four archives and publish them as GitHub Release
+assets:
+
+```sh
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+Each release archive contains the executable and the project, curl, and cJSON
+license notices. The workflow can also be run manually from the GitHub Actions
+tab to build downloadable artifacts without publishing a release.

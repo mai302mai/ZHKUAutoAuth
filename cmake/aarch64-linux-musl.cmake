@@ -1,7 +1,9 @@
 set(CMAKE_SYSTEM_NAME Linux)
-set(CMAKE_SYSTEM_PROCESSOR aarch64)
+set(AUTOAUTH_TARGET_PROCESSOR "aarch64" CACHE STRING
+    "Target Linux processor (x86_64, i386, aarch64, or arm)")
+set(CMAKE_SYSTEM_PROCESSOR "${AUTOAUTH_TARGET_PROCESSOR}")
 
-set(ZIG_EXECUTABLE "" CACHE FILEPATH "Path to the Windows-hosted Zig compiler")
+set(ZIG_EXECUTABLE "" CACHE FILEPATH "Path to the Zig compiler")
 if(NOT ZIG_EXECUTABLE AND DEFINED ENV{ZIG_EXECUTABLE})
   set(ZIG_EXECUTABLE "$ENV{ZIG_EXECUTABLE}" CACHE FILEPATH
       "Path to the Windows-hosted Zig compiler" FORCE)
@@ -17,16 +19,17 @@ if(NOT ZIG_EXECUTABLE)
 endif()
 if(NOT ZIG_EXECUTABLE OR NOT EXISTS "${ZIG_EXECUTABLE}")
   message(FATAL_ERROR
-    "Zig was not found. Add zig to PATH, set ZIG_EXECUTABLE, or install it under D:/Software/zig-0.14.1.")
+    "Zig was not found. Add zig to PATH or set ZIG_EXECUTABLE.")
 endif()
 
 set(CMAKE_C_COMPILER "${ZIG_EXECUTABLE}" CACHE FILEPATH "")
 set(CMAKE_C_COMPILER_ARG1 "cc" CACHE STRING "")
-set(CMAKE_C_COMPILER_TARGET "aarch64-linux-musl" CACHE STRING "")
+set(CMAKE_C_COMPILER_TARGET "aarch64-linux-musl" CACHE STRING
+    "Zig target triple for the Linux cross compiler")
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
 set(AUTOAUTH_LLVM_MINGW_ROOT "" CACHE PATH
-    "Optional LLVM-MinGW installation root containing bin/llvm-ar")
+    "Optional LLVM installation root containing bin/llvm-ar")
 find_program(AUTOAUTH_LLVM_AR
   NAMES llvm-ar.exe llvm-ar
   HINTS
