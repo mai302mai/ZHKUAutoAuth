@@ -48,6 +48,22 @@ cmake --build --preset mingw-debug
 .\build\mingw-debug\AutoAuth.exe 账户名称(学号) 账户密码
 ```
 
+也可以将账户信息写入 JSON 配置文件，并在启动程序时指定文件路径。
+Windows 配置文件示例：
+
+```json
+{
+  "account": "账户名称(学号)",
+  "password": "账户密码"
+}
+```
+
+使用配置文件运行：
+
+```powershell
+.\build\mingw-debug\AutoAuth.exe --config .\config.json
+```
+
 程序会先查询在线列表。若账户已经在线，会输出第一条记录的
 在线时间、客户端IP、上传大小(Byte) 和 下载大小(Byte)；否则提交登录请求。
 
@@ -67,6 +83,23 @@ cmake --build build/linux
 ```
 ./build/linux/AutoAuth 账户名称(学号) 账户密码 eth0
 ```
+
+Linux 配置文件还需要包含网络接口名称：
+
+```json
+{
+  "account": "账户名称(学号)",
+  "password": "账户密码",
+  "interface": "eth0"
+}
+```
+
+```sh
+./build/linux/AutoAuth --config ./config.json
+```
+
+配置文件路径也可以用 `-c` 选项指定。原有的位置参数用法仍然可用。
+配置文件包含账户密码，请妥善保管并限制文件访问权限。
 
 ## 在 Windows 主机上交叉编译 Linux AArch64 程序
 
@@ -134,4 +167,3 @@ GitHub Actions 会构建以下平台的可执行文件：
 ##许可证
 AutoAuth 使用 GNU 通用公共许可证第 3 版（GPL-3.0-only）授权，详见
 [LICENSE](./LICENSE)。版权所有 (C) 2026 mai302mai。
-

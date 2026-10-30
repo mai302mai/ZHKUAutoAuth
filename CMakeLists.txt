@@ -50,6 +50,10 @@ add_library(online_info STATIC online_info.c)
 target_include_directories(online_info PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(online_info PRIVATE cjson)
 
+add_library(user_config STATIC user_config.c)
+target_include_directories(user_config PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(user_config PRIVATE cjson)
+
 add_library(http_client STATIC http_client.c)
 target_include_directories(http_client PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(http_client PUBLIC CURL::libcurl)
@@ -73,9 +77,13 @@ if(WIN32)
 endif()
 
 add_executable(AutoAuth main.c)
-target_link_libraries(AutoAuth PRIVATE network_auth)
+target_link_libraries(AutoAuth PRIVATE network_auth user_config)
 
 enable_testing()
 add_executable(test_online_info tests/test_online_info.c)
 target_link_libraries(test_online_info PRIVATE online_info)
 add_test(NAME online_info_parser COMMAND test_online_info)
+
+add_executable(test_user_config tests/test_user_config.c)
+target_link_libraries(test_user_config PRIVATE user_config)
+add_test(NAME user_config_loader COMMAND test_user_config)
