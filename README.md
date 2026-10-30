@@ -76,15 +76,17 @@ cmake -S . -B build/linux
 cmake --build build/linux
 ```
 
-运行程序 
+### 运行程序 
 在 Linux 上构建并运行时，还需要传入网络接口名称 (eg. eth0)
 指定接口功能用于OpenWRT等路由设备上多接口认证
+
+命令行直接运行
 
 ```
 ./build/linux/AutoAuth 账户名称(学号) 账户密码 eth0
 ```
 
-Linux 配置文件还需要包含网络接口名称：
+Linux 平台通过配置文件配置AutoAuth并运行时，配置文件还需要包含网络接口名称
 
 ```json
 {
@@ -100,6 +102,29 @@ Linux 配置文件还需要包含网络接口名称：
 
 配置文件路径也可以用 `-c` 选项指定。原有的位置参数用法仍然可用。
 配置文件包含账户密码，请妥善保管并限制文件访问权限。
+
+
+### Linux 平台配置开机自启动
+
+创建 AutoAuth 的 systemd 服务
+
+```
+vim /etc/systemd/system/autoauth.service
+```
+
+填入相关配置 EcecStart 字段中填入你存放 AutoAuth 可执行文件和配置文件的完整路径
+
+```
+[Unit]
+Description=AutoAuth ZHKU's Campus Network Authentication
+After=network.target
+[Service]
+ExecStart=/usr/sbin/AutoAuth -c /etc/AutoAuth/config.json
+Restart=always
+[Install]
+WantedBy=multi-user.target
+
+```
 
 ## 在 Windows 主机上交叉编译 Linux AArch64 程序
 
