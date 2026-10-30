@@ -112,7 +112,7 @@ Linux 平台通过配置文件配置AutoAuth并运行时，配置文件还需要
 vim /etc/systemd/system/autoauth.service
 ```
 
-填入相关配置 EcecStart 字段中填入你存放 AutoAuth 可执行文件和配置文件的完整路径
+填入相关配置 ExecStart 字段中填入你存放 AutoAuth 可执行文件和配置文件的完整路径
 
 ```
 [Unit]
@@ -123,7 +123,6 @@ ExecStart=/usr/sbin/AutoAuth -c /etc/AutoAuth/config.json
 Restart=always
 [Install]
 WantedBy=multi-user.target
-
 ```
 
 ## 在 Windows 主机上交叉编译 Linux AArch64 程序
